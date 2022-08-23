@@ -105,14 +105,20 @@ class JsonRedis(object):
                     if i == str(groupId):
                         JsonRedis.checker([key])
 
-    def promote(self, userId,groupId):
+    def promote(self, userId, groupId=None):
         User = _tasks["User_group"].get(str(userId))
         if User:
             if len(User) != 0:
-                for key, i in _tasks["Time_group"].items():
-                    if i == str(groupId):
-                        JsonRedis.checker([key])
-                        JsonRedis.saveUser("super", userId, str(groupId))
+                if groupId:
+                    for key, i in _tasks["Time_group"].items():
+                        if i == str(groupId):
+                            JsonRedis.checker([key])
+                            JsonRedis.saveUser("super", userId, str(groupId))
+                else:
+                    key = _tasks["User_group"].get(str(userId))[0]
+                    groupId = _tasks["Time_group"].get(key)
+                    JsonRedis.checker([key])
+                    JsonRedis.saveUser("super", userId, str(groupId))
 
     @staticmethod
     def run_timer():
