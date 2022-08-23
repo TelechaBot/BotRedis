@@ -4,7 +4,8 @@ import time
 
 
 class JsonRedis(object):
-    def __init__(self):
+    def __init__(self, interval):
+        self.interval = interval
         JsonRedis.load_tasks()
         if not _tasks.get("Time_id"):
             _tasks["Time_id"] = {}
@@ -18,7 +19,9 @@ class JsonRedis(object):
         if not _tasks.get("super"):
             _tasks["super"] = {}
             JsonRedis.save_tasks()
-
+        if not _tasks.get("interval"):
+            _tasks["interval"] = self.interval
+            JsonRedis.save_tasks()
     @staticmethod
     def load_tasks():
         global _tasks
@@ -109,7 +112,7 @@ class JsonRedis(object):
         ban = []
         ban = ban + tar
         for key, item in _tasks["Time_id"].items():
-            if int(time.time()) - int(key) > 5:
+            if int(time.time()) - int(key) > int(_tasks["interval"]):
                 ban.append(key)
             else:
                 print("No")
@@ -121,8 +124,11 @@ class JsonRedis(object):
                 print("ban " + str(user) + str(group))
         JsonRedis.save_tasks()
 
+    def interval(self):
+        return self.interval
 
-JsonRedis().add(1222, str(-52333))
+
+JsonRedis(6).add(1222, str(-52333))
 
 JsonRedis.timer()
 
