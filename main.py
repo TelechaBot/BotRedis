@@ -127,9 +127,9 @@ class JsonRedis(object):
     def interval(self):
         return self.interval
 
-
-JsonRedis(6).add(1222, str(-52333))
-
-JsonRedis.timer()
-
-print(2)
+#
+# JsonRedis(6).add(1222, str(-52333))
+#
+# JsonRedis.timer()
+#
+# print(2)
