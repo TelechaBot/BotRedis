@@ -22,6 +22,7 @@ class JsonRedis(object):
         if not _tasks.get("interval"):
             _tasks["interval"] = self.interval
             JsonRedis.save_tasks()
+
     @staticmethod
     def load_tasks():
         global _tasks
@@ -83,15 +84,35 @@ class JsonRedis(object):
         JsonRedis.save_tasks()
         JsonRedis.saveUser("User_group", userId, str(int(time.time())))
 
-    def promote(self, userId):
+    def read(self, userId):
         User = _tasks["User_group"].get(str(userId))
         if User:
             if len(User) != 0:
                 key = _tasks["User_group"].get(str(userId))[0]
                 # user = _tasks["Time_id"].get(key)
                 group = _tasks["Time_group"].get(key)
-                JsonRedis.checker([key])
-                JsonRedis.saveUser("super", userId, str(group))
+                return group
+            else:
+                return False
+        else:
+            return False
+
+    def removed(self, userId, groupId):
+        User = _tasks["User_group"].get(str(userId))
+        if User:
+            if len(User) != 0:
+                for key, i in _tasks["Time_group"].items():
+                    if i == str(groupId):
+                        JsonRedis.checker([key])
+
+    def promote(self, userId,groupId):
+        User = _tasks["User_group"].get(str(userId))
+        if User:
+            if len(User) != 0:
+                for key, i in _tasks["Time_group"].items():
+                    if i == str(groupId):
+                        JsonRedis.checker([key])
+                        JsonRedis.saveUser("super", userId, str(groupId))
 
     @staticmethod
     def run_timer():
@@ -108,6 +129,7 @@ class JsonRedis(object):
     def checker(tar=None):
         if tar is None:
             tar = []
+            # 豁免名单
         JsonRedis.load_tasks()
         ban = []
         ban = ban + tar
@@ -121,7 +143,9 @@ class JsonRedis(object):
             group = _tasks["Time_group"].pop(key)
             _tasks["User_group"][str(user)].remove(key)
             if not (key in tar):
+                # Ban 操作
                 print("ban " + str(user) + str(group))
+
         JsonRedis.save_tasks()
 
     def interval(self):
