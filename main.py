@@ -162,12 +162,11 @@ class JsonRedis(object):
                     user_something = []
                 if not (group in user_something):
                     # 过期验证的操作
-                    #from CaptchaCore.Bot import clinetBot
-                    #bot, config = clinetBot().botCreat()
-                    #bot.kick_chat_member(group, user)
-
+                    # from CaptchaCore.Bot import clinetBot
+                    # bot, config = clinetBot().botCreat()
+                    # bot.kick_chat_member(group, user)
                     print("ban " + str(user) + str(group))
-                JsonRedis.save_tasks()
+            JsonRedis.save_tasks()
 
     def interval(self):
         return self.interval
