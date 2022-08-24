@@ -7,8 +7,11 @@ import time
 
 class JsonRedis(object):
     def __init__(self, interval):
-        self.interval = interval
         JsonRedis.load_tasks()
+        if not _tasks.get("interval"):
+            if interval:
+                _tasks["interval"] = interval
+                JsonRedis.save_tasks()
         if not _tasks.get("Time_id"):
             _tasks["Time_id"] = {}
             JsonRedis.save_tasks()
@@ -20,9 +23,6 @@ class JsonRedis(object):
             JsonRedis.save_tasks()
         if not _tasks.get("super"):
             _tasks["super"] = {}
-            JsonRedis.save_tasks()
-        if not _tasks.get("interval"):
-            _tasks["interval"] = self.interval
             JsonRedis.save_tasks()
 
     @staticmethod
@@ -93,11 +93,11 @@ class JsonRedis(object):
                 key = _tasks["User_group"].get(str(userId))[0]
                 # user = _tasks["Time_id"].get(key)
                 group = _tasks["Time_group"].get(key)
-                return group
+                return group, key
             else:
-                return False
+                return False, False
         else:
-            return False
+            return False, False
 
     def removed(self, userId, groupId):
         User = _tasks["User_group"].get(str(userId))
@@ -105,7 +105,7 @@ class JsonRedis(object):
             if len(User) != 0:
                 for key, i in _tasks["Time_group"].items():
                     if i == str(groupId):
-                        JsonRedis.checker([key])
+                        JsonRedis.checker(tar=[key])
 
     def promote(self, userId, groupId=None):
         User = _tasks["User_group"].get(str(userId))
@@ -114,12 +114,12 @@ class JsonRedis(object):
                 if groupId:
                     for key, i in _tasks["Time_group"].items():
                         if i == str(groupId):
-                            JsonRedis.checker([key])
+                            JsonRedis.checker(tar=[key])
                             JsonRedis.saveUser("super", str(userId), str(groupId))
                 else:
                     key = _tasks["User_group"].get(str(userId))[0]
                     groupId = _tasks["Time_group"].get(key)
-                    JsonRedis.checker([key])
+                    JsonRedis.checker(tar=[key])
                     JsonRedis.saveUser("super", str(userId), str(groupId))
 
     @staticmethod
@@ -134,15 +134,17 @@ class JsonRedis(object):
         t.start()
 
     @staticmethod
-    def checker(tar=None):
+    def checker(tar=None, fail_user=None):
         if tar is None:
             tar = []
+        if fail_user is None:
+            fail_user = []
             # 豁免名单
-        JsonRedis.load_tasks()
         ban = []
         ban = ban + tar
+        ban = ban + fail_user
         for key, item in _tasks["Time_id"].items():
-            if int(time.time()) - int(key) > int(_tasks["interval"]):
+            if abs(int(time.time()) - int(key)) > int(_tasks["interval"]):
                 ban.append(key)
             else:
                 pass
@@ -154,8 +156,7 @@ class JsonRedis(object):
             try:
                 _tasks["User_group"].get(str(user)).remove(str(key))
             except Exception as e:
-                pass
-
+                print(e)
             if not (key in tar):
                 user_something = _tasks["super"].get(str(user))
                 if user_something is None:
@@ -164,9 +165,12 @@ class JsonRedis(object):
                     # 过期验证的操作
                     # from CaptchaCore.Bot import clinetBot
                     # bot, config = clinetBot().botCreat()
-                    # bot.kick_chat_member(group, user)
+                    # try:
+                    #     bot.kick_chat_member(group, user)
+                    # except Exception as e:
+                    #     print(e)
                     print("ban " + str(user) + str(group))
-            JsonRedis.save_tasks()
+        JsonRedis.save_tasks()
 
     def interval(self):
         return self.interval
