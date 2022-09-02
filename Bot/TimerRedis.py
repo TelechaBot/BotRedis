@@ -230,9 +230,4 @@ class JsonRedis(object):
         t = Timer(3, JsonRedis.run_timer)
         t.start()
 
-#########################################
-# JsonRedis(6).add(1222, str(-52333))
-#
-# JsonRedis.timer()
-#
-# print(2)
+
