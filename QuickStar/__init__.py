@@ -5,21 +5,35 @@
 # @Github    ：sudoskys
 
 import redis
+import time
 
-pool = redis.ConnectionPool(host='localhost', port=6379, decode_responses=True)
-r = redis.Redis(host='localhost', port=6379, decode_responses=True)
+_redis_pool = redis.ConnectionPool(host='localhost', port=6379, decode_responses=True)
+_redis = redis.Redis(host='localhost', port=6379, decode_responses=True)
 
 
 class JsonRedis(object):
-    @staticmethod
-    def init_data():
-        if not globals().get("__quick_task"):
-            task = r.get('telecha_tasks')
-            if task is not None:
-                globals()["__quick_task"] = task
-            else:
-                globals()["__quick_task"] = {}
+    def __init__(self):
+        """
+        对 redis 进行直接操作
+        """
+        pass
 
-    def resign(self):
-        self.init_data()
-        print(globals()["__quick_task"])
+    @staticmethod
+    def create_data(user_id: str, group_id: str):
+        """
+        创建一个新的用户档案，使用当前时间值作为键名。
+        :param user_id:
+        :param group_id:
+
+        :return: key ,data 返回dict仿api字段,只许str类型键
+        """
+        if not user_id:
+            raise KeyError("not found user_id")
+        if not group_id:
+            raise KeyError("not found group_id")
+        _time = str(int(time.time()))
+        return time, {"user": str(user_id), "group": str(group_id)}
+
+    def resign_user(self, userId: int, groupId: int):
+        request_ = {"user_id": userId, "group_id": groupId}
+        _key, _profile = self.create_data(**request_)
