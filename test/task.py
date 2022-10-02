@@ -4,3 +4,6 @@
 # @Software: PyCharm
 # @Github    ：sudoskys
 from QuickStar import JsonRedis
+
+#JsonRedis().resign_user(userId=114514, groupId=-2412)
+JsonRedis().getTask()
