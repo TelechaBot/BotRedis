@@ -229,5 +229,3 @@ class JsonRedis(object):
         from threading import Timer
         t = Timer(3, JsonRedis.run_timer)
         t.start()
-
-
