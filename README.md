@@ -1,6 +1,8 @@
 # BotRedis
+ 
+一个 延迟消费队列实现，多线程，内存安全，基于 Python。
 
-一个 延迟队列实现
+简单 ~简陋~
 
 ```python
 import time
@@ -37,3 +39,7 @@ print(((e - s) * 1000), "毫秒")
 ### 如何使用
 
 自己改动 `QuickStar/__init__.py`
+
+### 关于 `Bot/TimerRedis.py`
+
+初代垃圾
