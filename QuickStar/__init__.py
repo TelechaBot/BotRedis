@@ -30,7 +30,7 @@ class JsonRedis(object):
             if len(_MsgTask) == 0:
                 if Course := _redis.get("Telecha_Task"):
                     _MsgTask = json.loads(Course)
-                    print("队列:初始化上次检查的数据")
+                    # print("队列:初始化上次检查的数据")
         except Exception as err:
             raise err
         finally:
@@ -123,8 +123,8 @@ class JsonRedis(object):
                 print(f"释放{uuid}，{userId}-{groupId}")
                 _MsgTask.pop(key, None)
             # 存储队列数据
-            _redis.set("Telecha_Task", json.dumps(_MsgTask))
         except Exception as err:
             raise err
         finally:
             task_lock.release()
+            _redis.set("Telecha_Task", json.dumps(_MsgTask))
