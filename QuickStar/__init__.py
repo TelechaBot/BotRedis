@@ -3,6 +3,7 @@
 # @FileName: __init__.py.py
 # @Software: PyCharm
 # @Github    ：sudoskys
+import datetime
 import json
 import time
 import redis
@@ -28,7 +29,7 @@ class JsonRedis(object):
         try:
             task_lock.acquire()
             if len(_MsgTask) == 0:
-                if Course := _redis.get("Telecha_Task"):
+                if Course := _redis.get("_Telecha_Task"):
                     _MsgTask = json.loads(Course)
                     # print("队列:初始化上次检查的数据")
         except Exception as err:
@@ -53,13 +54,36 @@ class JsonRedis(object):
         user_id = str(user_id)
         # 上版的时间戳导致了重复的几率，所以采用新的队列算法
         _time = str(int(time.time()))
-        _uukey = uuid.uuid4()
+        _uukey = uuid.uuid5(uuid.NAMESPACE_DNS, f"{user_id}{group_id}")
         return f"Task_{user_id}_{group_id}", {"user": user_id,
                                               "group": group_id,
                                               "time": _time,
                                               "uuid": str(_uukey),
                                               "interval": 10,
                                               }
+
+    @staticmethod
+    def read_user(userId: int):
+        """
+        从队列取出一个数据！
+        :param userId: 用户 ID
+        :return: 返回 groupId，和 key
+        """
+        global _MsgTask, task_lock
+        try:
+            task_lock.acquire()
+            groupKey = False
+            key = False
+            for item in _MsgTask:
+                _Data = _MsgTask[item]
+                if str(_Data.get("user")) == str(userId):
+                    groupKey = _Data.get("group")
+                    key = _Data.get("uuid")
+            return groupKey, key
+        except Exception as err:
+            raise err
+        finally:
+            task_lock.release()
 
     @staticmethod
     def resign_user(userId: int, groupId: int):
@@ -70,8 +94,9 @@ class JsonRedis(object):
             _key, _profile = JsonRedis.create_data(**request_)
             if not _MsgTask.get(_key):
                 _MsgTask[_key] = _profile
+                return _profile.get("uuid")
             else:
-                pass
+                return _MsgTask.get(_key).get("uuid")
         except Exception as err:
             raise err
         finally:
@@ -80,9 +105,9 @@ class JsonRedis(object):
     @staticmethod
     def grant_resign(userId: int, groupId: int):
         request_ = {"user_id": userId, "group_id": groupId}
-        _key, _ = JsonRedis.create_data(**request_)
+        _key, _data = JsonRedis.create_data(**request_)
         if Data := _MsgTask.get(_key):
-            JsonRedis.checker(unban=[_key])
+            JsonRedis.checker(unban=[_data])
             return Data.get("uuid")
         else:
             return "没有记录"
@@ -90,8 +115,8 @@ class JsonRedis(object):
     @staticmethod
     def remove_user(userId: int, groupId: int):
         request_ = {"user_id": userId, "group_id": groupId}
-        _key, _ = JsonRedis.create_data(**request_)
-        JsonRedis.checker(dismiss=[_key])
+        _key, _data = JsonRedis.create_data(**request_)
+        JsonRedis.checker(dismiss=[_data])
 
     @staticmethod
     def checker(ban=None, unban=None, dismiss=None):
@@ -102,29 +127,40 @@ class JsonRedis(object):
             unban = []
         if ban is None:
             ban = []
-        # 先处理掉 dismiss 的数据，然后对数据进行检查，添加到执行队列封杀
+        # 筛选数据
+        for key in _MsgTask:
+            _data = _MsgTask[key]
+            if abs(int(time.time()) - int(_data["time"])) > int(_data["interval"]):
+                ban.append({"user": _data["user"], "group": _data["group"]})
+
+        # 释放数据
         try:
             task_lock.acquire()
-            # 数据释放与处理
-            for key in dismiss:
-                _MsgTask.pop(key, None)
-            for key in unban:
-                _MsgTask.pop(key, None)
-            # 过期检查
-            for key in _MsgTask:
-                _data = _MsgTask[key]
-                if abs(int(time.time()) - int(_data["time"])) > int(_data["interval"]):
-                    ban.append(key)
-            for key in ban:
-                profile = _MsgTask[key]
+            allL = []
+            allL.extend(ban)
+            allL.extend(dismiss)
+            allL.extend(unban)
+            # print(allL)
+            for key in allL:
+                profile = key
                 userId = profile.get("user")
                 groupId = profile.get("group")
-                uuid = profile.get("uuid")
-                print(f"释放{uuid}，{userId}-{groupId}")
-                _MsgTask.pop(key, None)
-            # 存储队列数据
+                _key = JsonRedis.crateKey(user_id=userId, group_id=groupId)
+                _MsgTask.pop(_key, None)
         except Exception as err:
             raise err
         finally:
             task_lock.release()
-            _redis.set("Telecha_Task", json.dumps(_MsgTask))
+            _redis.set("_Telecha_Task", json.dumps(_MsgTask))
+        # 处理掉数据
+        try:
+            for key in unban:
+                print("处理unban",key)
+            for key in ban:
+                print("处理ban",key)
+        except Exception as err:
+            print(err)
+
+    @staticmethod
+    def crateKey(user_id, group_id):
+        return f"Task_{user_id}_{group_id}"
